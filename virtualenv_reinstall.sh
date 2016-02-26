@@ -251,7 +251,7 @@ done
 
 cd ..
 
-echo "You in vitual enviroment \"$thisbranch\". Run \"deactivate\" to exit."
+echo "You are in vitual environment \"$thisbranch\". Run \"deactivate\" to exit."
 
 exit 0
 
