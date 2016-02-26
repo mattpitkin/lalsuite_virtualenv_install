@@ -1,6 +1,6 @@
 # LALSuite installer
 
-This bash script will (re)install the LSC Algorithm Library suite [(LALSuite)](https://www.lsc-group.phys.uwm.edu/daswg/projects/lalsuite.html)
+This bash script will (re)install the LSC Algorithm Library suite [(LALSuite)](https://wiki.ligo.org/DASWG/LALSuite)
 (a suite of software for gravitational wave data analysis). It assumes that LALSuite has been
 cloned from the git repository.
 
