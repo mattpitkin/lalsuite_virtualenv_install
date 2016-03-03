@@ -23,7 +23,7 @@ usage="Usage $0 -b (-n -p -m -h):\n\t-b\tbranchname (the git branch name) [requi
 
 if [[ $# -eq 0 ]]; then
   echo -e $usage
-  exit 0
+  return 0
 fi
 
 nopython=0 # by default install additional python packages
@@ -49,14 +49,14 @@ while getopts ":b:p:nh" opt; do
           echo "  $branch"
         done
         cd ..
-        exit 0
+        return 0
       fi
       ;;
     p)
       pythonexe=$OPTARG
       if [[ ! -x "$OPTARG" ]]; then
         echo "$OPTARG: this python exectuable does not exist or is not executable"
-        exit 0
+        return 0
       fi
       pythonexe="-p $OPTARG"
       ;;
@@ -68,7 +68,7 @@ while getopts ":b:p:nh" opt; do
       ;;
     h)
       echo -e $usage
-      exit 0
+      return 0
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -80,7 +80,7 @@ done
 if [[ $isbranch -eq 0 ]]; then
   echo -e "No branch has been given\n"
   echo -e $usage
-  exit 0
+  return 0
 fi
   
 baseenv=${HOME}/lscsoft/.virtualenvs
@@ -97,7 +97,7 @@ if [[ -z "$VIRTUALENVWRAPPER_SCRIPT" ]]; then
   else
     # could not find a virtualenvwrapper
     echo "Could not find virtualenvwrapper.sh in your PATH"
-    exit 0
+    return 0
   fi
 fi
 
@@ -186,7 +186,7 @@ git checkout $thisbranch
 if [[ $? -ne 0 ]]; then
   echo "Could not check out \"$thisbranch\". Check for problems."
   deactivate
-  exit 0
+  return 0
 fi
 
 eswig="--enable-swig-python" # set enable swig python flag
@@ -253,5 +253,4 @@ cd ..
 
 echo "You are in vitual environment \"$thisbranch\". Run \"deactivate\" to exit."
 
-exit 0
-
+return 0
