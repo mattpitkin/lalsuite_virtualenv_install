@@ -35,7 +35,7 @@ pythonexe=""
 isbranch=0
 basemap=0
 
-while getopts ":b:p:nh" opt; do
+while getopts ":b:p:nmh" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
