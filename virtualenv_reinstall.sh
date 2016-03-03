@@ -15,12 +15,15 @@ branches=$(git branch | cut -c 3-) # see http://stackoverflow.com/a/3846451/1862
 # command lines arguments:
 #   -b branchname (the git branch name) [required]
 #   -n (do not install additional python packages)
-#   -p python (the path to the required python version
+#   -p python (the path to the required python version)
+#   -v (path to the virtualenvwrapper.sh script)
+#   -m install basemap
 #   -h (print this info)
 
-usage="Usage $0 -b (-n -p -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
+usage="Usage $0 -b (-n -p -v -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
 \t-n\tdo not install a selection of additional python packages [optional]\n\
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
+\t-v\tpath to the virtualenvwrapper.sh script\n\
 \t-m\tbasemap (install libgeos and basemap directly) [optional]\n\
 \t-h\thelp\n"
 
@@ -34,8 +37,9 @@ nopython=0 # by default install additional python packages
 pythonexe=""
 isbranch=0
 basemap=0
+vewscript=""
 
-while getopts ":b:p:nmh" opt; do
+while getopts ":b:p:v:nmh" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
@@ -65,6 +69,14 @@ while getopts ":b:p:nmh" opt; do
       fi
       pythonexe="-p $OPTARG"
       ;;
+    v)
+      vewscript=$OPTARG
+      if [[ ! -x "$vewscript" ]]; then
+      echo "$OPTARG: this virtualenvwrapper.sh script does not exist or is not executable"
+        cd $CURDIR
+        exit 0
+      fi
+      ;;
     n)
       nopython=1
       ;;
@@ -89,65 +101,75 @@ if [[ $isbranch -eq 0 ]]; then
   cd $CURDIR
   exit 0
 fi
-  
+ 
 baseenv=${HOME}/lscsoft/.virtualenvs
 
 # use virtualenvwrapper
 export WORKON_HOME=$baseenv
 
-# check if virtualenvwrapper.sh hasn't already been sourced
-if [[ -z "$VIRTUALENVWRAPPER_SCRIPT" ]]; then
-  # try and find script
-  venvwrapper=`which virtualenvwrapper.sh`
-  if [[ $? -eq 0 ]]; then
-    source $venvwrapper
+# check if workon function is defined (if not then source the virtualenvwrapper script
+if [ ! -n "$(type -t workon)" ] || [ ! "$(type -t workon)" = function ]; then
+  # see if virtialenvwrapper.sh script has been given
+  if [ -f $vewscript ]; then
+    source $vewscript
   else
-    # could not find a virtualenvwrapper
-    echo "Could not find virtualenvwrapper.sh in your PATH"
-    cd $CURDIR
-    exit 0
+    # try and find script
+    venvwrapper=`which virtualenvwrapper.sh`
+    if [[ $? -eq 0 ]]; then
+      source $venvwrapper
+    else
+      # could not find a virtualenvwrapper
+      echo "Could not find virtualenvwrapper.sh in your PATH"
+      cd $CURDIR
+      exit 0
+    fi
   fi
 fi
 
 # following http://virtualenvwrapper.readthedocs.org/en/latest/scripts.html#postactivate add an extra space to command prompt between env and prompt
-echo "#!/bin/bash" > $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
-echo 'PS1="(`basename \"$VIRTUAL_ENV\"`) $_OLD_VIRTUAL_PS1"' >> $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
+if [ ! -f $VIRTUALENVWRAPPER_HOOK_DIR/postactivate ]; then
+  echo "#!/bin/bash" > $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
+  echo 'PS1="(`basename \"$VIRTUAL_ENV\"`) $_OLD_VIRTUAL_PS1"' >> $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
+fi
 
-if [[ $nopython -eq 0 ]]; then
-  # some things to install (upgrade distribute if possible) in all virtual enviroments
-  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "healpy" "scotchcorner")
-  postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
-  echo "#!/bin/bash" > $postmkvirtualenv
-  for pr in "${pipinstalls[@]}"; do
-    echo "pip install $pr" >> $postmkvirtualenv
-  done
+if [ ! -f $VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv ]; then
+  if [[ $nopython -eq 0 ]]; then
+    # some things to install (upgrade distribute if possible) in all virtual enviroments
+    pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "healpy" "scotchcorner")
+    postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
+    echo "#!/bin/bash" > $postmkvirtualenv
+    for pr in "${pipinstalls[@]}"; do
+      echo "pip install $pr" >> $postmkvirtualenv
+    done
   
-  if [[ $basemap -eq 1 ]]; then
-  # for matplotlib 1.5.1 there are problems with basemap, so here's a work around for installing it
-  # install libgeos (see http://stackoverflow.com/questions/29333431/importerror-when-importing-basemap):
-  #   for Ubuntu/Debian run e.g.:
-  #     >> sudo apt-get install libgeos-3.4.2 libgeos-dev
-  #   otherwise download and install libgeos e.g.:
-  #     >> wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2
-    echo "# install libgeos and basemap" >> $postmkvirtualenv
-    echo "mkdir \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
-    echo "CURRENTDIR=`pwd`" >> $postmkvirtualenv 
-    echo "cd \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
-    echo "wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2" >> $postmkvirtualenv
-  #     >> tar xvjf geos-3.5.0.tar.bz2
-    echo "tar xvjf geos-3.5.0.tar.bz2" >> $postmkvirtualenv
-  #     >> cd geos-3.5.0
-    echo "cd geos-3.5.0"
-  #     >> ./configure --prefix=$VIRTUAL_ENV --enable-python
-    echo "./configure --prefix=\$VIRTUAL_ENV --enable-python" >> $postmkvirtualenv
-  #     >> make; make install
-    echo "make; make install" >> $postmkvirtualenv
-  #     >> export GEOS_DIR=$VIRTUAL_ENV
-    echo "export GEOS_DIR=\$VIRTUAL_ENV" >> $postmkvirtualenv
-  # Now install basemap directly from the matplotlib github page
-  #     >> pip install https://github.com/matplotlib/basemap/archive/master.zip
-    echo "pip install https://github.com/matplotlib/basemap/archive/master.zip" >> $postmkvirtualenv
-    echo "cd \$CURRENTDIR" >> $postmkvirtualenv
+    if [[ $basemap -eq 1 ]]; then
+      # for matplotlib 1.5.1 there are problems with basemap, so here's a work around for installing it
+      # install libgeos (see http://stackoverflow.com/questions/29333431/importerror-when-importing-basemap):
+      #   for Ubuntu/Debian run e.g.:
+      #     >> sudo apt-get install libgeos-3.4.2 libgeos-dev
+      #   otherwise download and install libgeos e.g.:
+      #     >> wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2
+      echo "# install libgeos and basemap" >> $postmkvirtualenv
+      echo "mkdir \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
+      echo "CURRENTDIR=`pwd`" >> $postmkvirtualenv 
+      echo "cd \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
+      echo "wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2" >> $postmkvirtualenv
+      #     >> tar xvjf geos-3.5.0.tar.bz2
+      echo "tar xvjf geos-3.5.0.tar.bz2" >> $postmkvirtualenv
+      #     >> cd geos-3.5.0
+      echo "cd geos-3.5.0"
+      #     >> ./configure --prefix=$VIRTUAL_ENV --enable-python
+      echo "./configure --prefix=\$VIRTUAL_ENV --enable-python" >> $postmkvirtualenv
+      #     >> make; make install
+      echo "make; make install" >> $postmkvirtualenv
+      #     >> export GEOS_DIR=$VIRTUAL_ENV
+      echo "export GEOS_DIR=\$VIRTUAL_ENV" >> $postmkvirtualenv
+      # Now install basemap directly from the matplotlib github page
+      #     >> pip install https://github.com/matplotlib/basemap/archive/master.zip
+      echo "pip install https://github.com/matplotlib/basemap/archive/master.zip" >> $postmkvirtualenv
+      echo "cd \$CURRENTDIR" >> $postmkvirtualenv
+    fi
+  fi
 fi
 
 # set path to virtual environment
@@ -263,3 +285,4 @@ cd $CURDIR
 echo "You are in vitual environment \"$thisbranch\". Run \"deactivate\" to exit."
 
 exit 0
+
