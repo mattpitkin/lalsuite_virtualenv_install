@@ -4,6 +4,9 @@
 
 LALSUITE_LOCATION=${HOME}/lscsoft/lalsuite
 
+# current location
+CURDIR=`pwd`
+
 # get a list of the current git branch names
 cd $LALSUITE_LOCATION
 
@@ -23,6 +26,7 @@ usage="Usage $0 -b (-n -p -m -h):\n\t-b\tbranchname (the git branch name) [requi
 
 if [[ $# -eq 0 ]]; then
   echo -e $usage
+  cd $CURDUR
   return 0
 fi
 
@@ -48,7 +52,7 @@ while getopts ":b:p:nh" opt; do
         for branch in ${branches[@]}; do
           echo "  $branch"
         done
-        cd ..
+        cd $CURDIR
         return 0
       fi
       ;;
@@ -56,6 +60,7 @@ while getopts ":b:p:nh" opt; do
       pythonexe=$OPTARG
       if [[ ! -x "$OPTARG" ]]; then
         echo "$OPTARG: this python exectuable does not exist or is not executable"
+        cd $CURDIR
         return 0
       fi
       pythonexe="-p $OPTARG"
@@ -68,6 +73,7 @@ while getopts ":b:p:nh" opt; do
       ;;
     h)
       echo -e $usage
+      cd $CURDIR
       return 0
       ;;
     \?)
@@ -80,6 +86,7 @@ done
 if [[ $isbranch -eq 0 ]]; then
   echo -e "No branch has been given\n"
   echo -e $usage
+  cd $CURDIR
   return 0
 fi
   
@@ -97,6 +104,7 @@ if [[ -z "$VIRTUALENVWRAPPER_SCRIPT" ]]; then
   else
     # could not find a virtualenvwrapper
     echo "Could not find virtualenvwrapper.sh in your PATH"
+    cd $CURDIR
     return 0
   fi
 fi
@@ -122,24 +130,24 @@ if [[ $nopython -eq 0 ]]; then
   #   otherwise download and install libgeos e.g.:
   #     >> wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2
     echo "# install libgeos and basemap" >> $postmkvirtualenv
-    echo "mkdir $VIRTUAL_ENV/opt" >> $postmkvirtualenv
-    echo "CURDIR=`pwd`" >> $postmkvirtualenv 
-    echo "cd $VIRTUAL_ENV/opt" >> $postmkvirtualenv
+    echo "mkdir \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
+    echo "CURRENTDIR=`pwd`" >> $postmkvirtualenv 
+    echo "cd \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
     echo "wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2" >> $postmkvirtualenv
   #     >> tar xvjf geos-3.5.0.tar.bz2
     echo "tar xvjf geos-3.5.0.tar.bz2" >> $postmkvirtualenv
   #     >> cd geos-3.5.0
     echo "cd geos-3.5.0"
   #     >> ./configure --prefix=$VIRTUAL_ENV --enable-python
-    echo "./configure --prefix=$VIRTUAL_ENV --enable-python" >> $postmkvirtualenv
+    echo "./configure --prefix=\$VIRTUAL_ENV --enable-python" >> $postmkvirtualenv
   #     >> make; make install
     echo "make; make install" >> $postmkvirtualenv
   #     >> export GEOS_DIR=$VIRTUAL_ENV
-    echo "export GEOS_DIR=$VIRTUAL_ENV" >> $postmkvirtualenv
+    echo "export GEOS_DIR=\$VIRTUAL_ENV" >> $postmkvirtualenv
   # Now install basemap directly from the matplotlib github page
   #     >> pip install https://github.com/matplotlib/basemap/archive/master.zip
     echo "pip install https://github.com/matplotlib/basemap/archive/master.zip" >> $postmkvirtualenv
-    echo "cd $CURDIR" >> $postmkvirtualenv
+    echo "cd \$CURRENTDIR" >> $postmkvirtualenv
 fi
 
 # set path to virtual environment
@@ -186,6 +194,7 @@ git checkout $thisbranch
 if [[ $? -ne 0 ]]; then
   echo "Could not check out \"$thisbranch\". Check for problems."
   deactivate
+  cd $CURDIR
   return 0
 fi
 
@@ -249,7 +258,7 @@ for lalc in ${lalsuitepy[@]}; do
   cd ..
 done
 
-cd ..
+cd $CURDIR
 
 echo "You are in vitual environment \"$thisbranch\". Run \"deactivate\" to exit."
 
