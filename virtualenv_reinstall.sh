@@ -136,7 +136,7 @@ if [[ $nopython -eq 0 ]]; then
   postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
-    echo "pip install $pr" >> $postmkvirtualenv
+    echo "pip install --no-cache-dir $pr" >> $postmkvirtualenv
   done
   
   if [[ $basemap -eq 1 ]]; then
