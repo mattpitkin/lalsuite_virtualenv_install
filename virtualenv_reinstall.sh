@@ -37,7 +37,7 @@ nopython=0 # by default install additional python packages
 pythonexe=""
 isbranch=0
 basemap=0
-vewscript=""
+vewscript="jskgkgksbdkuylfzgslf" # some gibberish
 
 while getopts ":b:p:v:nmh" opt; do
   case $opt in
@@ -110,7 +110,7 @@ export WORKON_HOME=$baseenv
 # check if workon function is defined (if not then source the virtualenvwrapper script
 if [ ! -n "$(type -t workon)" ] || [ ! "$(type -t workon)" = function ]; then
   # see if virtialenvwrapper.sh script has been given
-  if [ -f $vewscript ]; then
+  if [ -r $vewscript ]; then
     source $vewscript
   else
     # try and find script
@@ -266,7 +266,7 @@ for lalc in ${lalsuite[@]}; do
   make install -j4
 
   # source config scripts
-  if [ -a ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
+  if [ -f ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
     . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
   fi
   cd ..
@@ -278,7 +278,7 @@ for lalc in ${lalsuitepy[@]}; do
   python setup.py install --prefix=${lalsuiteprefixes["$lalc"]}
 
   # source config scripts
-  if [ -a ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
+  if [ -f ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
     . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
   fi
   cd ..
