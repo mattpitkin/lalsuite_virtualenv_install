@@ -166,8 +166,11 @@ if [[ $nopython -eq 0 ]]; then
     echo "pip install https://github.com/matplotlib/basemap/archive/master.zip" >> $postmkvirtualenv
     echo "cd \$CURRENTDIR" >> $postmkvirtualenv
   fi
+else # remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
+  if [ -a $postmkvirtualenv ]; then
+    > $postmkvirtualenv # empty the file
+  fi
 fi
-
 
 # set path to virtual environment
 ENV=$thisbranch
@@ -263,7 +266,9 @@ for lalc in ${lalsuite[@]}; do
   make install -j4
 
   # source config scripts
-  . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
+  if [ -a ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
+    . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
+  fi
   cd ..
 done
 
@@ -273,7 +278,9 @@ for lalc in ${lalsuitepy[@]}; do
   python setup.py install --prefix=${lalsuiteprefixes["$lalc"]}
 
   # source config scripts
-  . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
+  if [ -a ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
+    . ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh
+  fi
   cd ..
 done
 
