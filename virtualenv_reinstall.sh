@@ -17,6 +17,7 @@ branches=$(git branch | cut -c 3-) # see http://stackoverflow.com/a/3846451/1862
 #   -n (do not install additional python packages)
 #   -p python (the path to the required python version)
 #   -v (path to the virtualenvwrapper.sh script)
+#   -o compile with further optimisation
 #   -m install basemap
 #   -h (print this info)
 
@@ -24,6 +25,7 @@ usage="Usage $0 -b (-n -p -v -m -h):\n\t-b\tbranchname (the git branch name) [re
 \t-n\tdo not install a selection of additional python packages [optional]\n\
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
 \t-v\tpath to the virtualenvwrapper.sh script\n\
+\t-o\tcompile lalsuite with the -O3 optimisation
 \t-m\tbasemap (install libgeos and basemap directly) [optional]\n\
 \t-h\thelp\n"
 
@@ -38,8 +40,9 @@ pythonexe=""
 isbranch=0
 basemap=0
 vewscript="jskgkgksbdkuylfzgslf" # some gibberish
+optimise=0
 
-while getopts ":b:p:v:nmh" opt; do
+while getopts ":b:p:v:nomh" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
@@ -76,6 +79,9 @@ while getopts ":b:p:v:nmh" opt; do
         cd $CURDIR
         exit 0
       fi
+      ;;
+    o)
+      optimise=1
       ;;
     n)
       nopython=1
@@ -257,12 +263,17 @@ declare -A lalsuiteprefixes=(["lal"]="$LSCSOFT_PREFIX" \
                              ["glue"]="$LSCSOFT_PREFIX" \
                              ["pylal"]="$LSCSOFT_PREFIX")
 
+extracflags=""
+if [[ $optimise -eq 1 ]]; then
+  extracflags=-O3
+fi
+
 # install components of lalsuite
 for lalc in ${lalsuite[@]}; do
   cd $lalc
   make distclean
   ./00boot
-  ./configure --prefix=${lalsuiteprefixes["$lalc"]} ${lalsuiteflags["$lalc"]}
+  ./configure --prefix=${lalsuiteprefixes["$lalc"]} ${lalsuiteflags["$lalc"]} CFLAGS=$extracflags
   make install -j4
 
   # source config scripts
