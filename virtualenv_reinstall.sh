@@ -25,7 +25,7 @@ usage="Usage $0 -b (-n -p -v -m -h):\n\t-b\tbranchname (the git branch name) [re
 \t-n\tdo not install a selection of additional python packages [optional]\n\
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
 \t-v\tpath to the virtualenvwrapper.sh script\n\
-\t-o\tcompile lalsuite with the -O3 optimisation
+\t-o\tcompile lalsuite with the -O3 optimisation\n\
 \t-m\tbasemap (install libgeos and basemap directly) [optional]\n\
 \t-h\thelp\n"
 
