@@ -138,7 +138,7 @@ echo 'PS1="(`basename \"$VIRTUAL_ENV\"`) $_OLD_VIRTUAL_PS1"' >> $VIRTUALENVWRAPP
 
 if [[ $nopython -eq 0 ]]; then
   # some things to install (upgrade distribute if possible) in all virtual enviroments
-  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "scotchcorner")
+  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner")
   postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
