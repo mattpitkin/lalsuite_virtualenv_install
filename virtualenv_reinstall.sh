@@ -16,16 +16,22 @@ branches=$(git branch | cut -c 3-) # see http://stackoverflow.com/a/3846451/1862
 #   -b branchname (the git branch name) [required]
 #   -n (do not install additional python packages)
 #   -p python (the path to the required python version)
+#   -u uninstall previous install (rather than just doing a distclean)
+#   -c only re-run 'make install' with running 'make distclean' beforehand
+#   -g perform 'git clean -dxf' to remove superfluous files 
 #   -v (path to the virtualenvwrapper.sh script)
 #   -o compile with further optimisation
 #   -m install basemap
 #   -h (print this info)
 
-usage="Usage $0 -b (-n -p -v -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
+usage="Usage $0 -b (-n -u -c -g -p -v -o -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
 \t-n\tdo not install a selection of additional python packages [optional]\n\
+\t-u\tuninstall previous lalsuite install (rather than just doing a 'make distclean') [optional]\n\
+\t-c\tonly re-run 'make install' without 'make distclean' beforehand [optional]\n\
+\t-g\tperform 'git clean -dxf' to remove superfluous files (BE CAREFUL!) [optional]\n\
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
-\t-v\tpath to the virtualenvwrapper.sh script\n\
-\t-o\tcompile lalsuite with the -O3 optimisation\n\
+\t-v\tpath to the virtualenvwrapper.sh script [optional]\n\
+\t-o\tcompile lalsuite with the -O3 optimisation [optional]\n\
 \t-m\tbasemap (install libgeos and basemap directly) [optional]\n\
 \t-h\thelp\n"
 
@@ -41,8 +47,11 @@ isbranch=0
 basemap=0
 vewscript="jskgkgksbdkuylfzgslf" # some gibberish
 optimise=0
+unintsall=0
+gitclean=0
+distclean=1
 
-while getopts ":b:p:v:nomh" opt; do
+while getopts ":b:p:v:nomugch" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
@@ -89,6 +98,18 @@ while getopts ":b:p:v:nomh" opt; do
     m)
       basemap=1
       ;;
+    u)
+      uninstall=1
+      ;;
+    c)
+      distclean=0 # remove distclean
+      ;;
+    g)
+      echo "Are you sure you really want to run 'git clean -dxf'? (y/n):"
+      read -n 1 ynanswer
+      if [ "$gender" == "y" ]; then
+        gitclean=1
+      fi
     h)
       echo -e $usage
       cd $CURDIR
@@ -268,12 +289,25 @@ if [[ $optimise -eq 1 ]]; then
   extracflags=-O3
 fi
 
+# perform git clean to remove old/superfluous files and directories from the repository
+if [[ $gitclean -eq 1 ]]; then
+  git clean -dxf
+fi
+
 # install components of lalsuite
 for lalc in ${lalsuite[@]}; do
   cd $lalc
-  make distclean
-  ./00boot
-  ./configure --prefix=${lalsuiteprefixes["$lalc"]} ${lalsuiteflags["$lalc"]} CFLAGS=$extracflags
+
+  if [[ $uninstall -eq 1 ]]; then
+    make uninstall
+  fi
+
+  if [[ $distclean -eq 1 ]]; then
+    make distclean
+    ./00boot
+    ./configure --prefix=${lalsuiteprefixes["$lalc"]} ${lalsuiteflags["$lalc"]} CFLAGS=$extracflags
+  fi
+
   make install -j4
 
   # source config scripts
