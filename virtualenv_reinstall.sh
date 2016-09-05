@@ -110,6 +110,7 @@ while getopts ":b:p:v:nomugch" opt; do
       if [ "$gender" == "y" ]; then
         gitclean=1
       fi
+      ;;
     h)
       echo -e $usage
       cd $CURDIR
