@@ -107,7 +107,7 @@ while getopts ":b:p:v:nomugch" opt; do
     g)
       echo "Are you sure you really want to run 'git clean -dxf'? (y/n):"
       read -n 1 ynanswer
-      if [ "$gender" == "y" ]; then
+      if [ "$ynanswer" == "y" ]; then
         gitclean=1
       fi
       ;;
