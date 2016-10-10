@@ -32,7 +32,6 @@ usage="Usage $0 -b (-n -u -c -g -p -v -o -m -h):\n\t-b\tbranchname (the git bran
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
 \t-v\tpath to the virtualenvwrapper.sh script [optional]\n\
 \t-o\tcompile lalsuite with the -O3 optimisation [optional]\n\
-\t-m\tbasemap (install libgeos and basemap directly) [optional]\n\
 \t-h\thelp\n"
 
 if [[ $# -eq 0 ]]; then
@@ -44,14 +43,13 @@ fi
 nopython=0 # by default install additional python packages
 pythonexe=""
 isbranch=0
-basemap=0
 vewscript="jskgkgksbdkuylfzgslf" # some gibberish
 optimise=0
 unintsall=0
 gitclean=0
 distclean=1
 
-while getopts ":b:p:v:nomugch" opt; do
+while getopts ":b:p:v:nougch" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
@@ -94,9 +92,6 @@ while getopts ":b:p:v:nomugch" opt; do
       ;;
     n)
       nopython=1
-      ;;
-    m)
-      basemap=1
       ;;
     u)
       uninstall=1
@@ -166,34 +161,6 @@ if [[ $nopython -eq 0 ]]; then
   for pr in "${pipinstalls[@]}"; do
     echo "pip install --no-cache-dir $pr" >> $postmkvirtualenv
   done
-  
-  if [[ $basemap -eq 1 ]]; then
-    # for matplotlib 1.5.1 there are problems with basemap, so here's a work around for installing it
-    # install libgeos (see http://stackoverflow.com/questions/29333431/importerror-when-importing-basemap):
-    #   for Ubuntu/Debian run e.g.:
-    #     >> sudo apt-get install libgeos-3.4.2 libgeos-dev
-    #   otherwise download and install libgeos e.g.:
-    #     >> wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2
-    echo "# install libgeos and basemap" >> $postmkvirtualenv
-    echo "mkdir \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
-    echo "CURRENTDIR=`pwd`" >> $postmkvirtualenv 
-    echo "cd \$VIRTUAL_ENV/opt" >> $postmkvirtualenv
-    echo "wget http://download.osgeo.org/geos/geos-3.5.0.tar.bz2" >> $postmkvirtualenv
-    #     >> tar xvjf geos-3.5.0.tar.bz2
-    echo "tar xvjf geos-3.5.0.tar.bz2" >> $postmkvirtualenv
-    #     >> cd geos-3.5.0
-    echo "cd geos-3.5.0" >> $postmkvirtualenv
-    #     >> ./configure --prefix=$VIRTUAL_ENV --enable-python
-    echo "./configure --prefix=\$VIRTUAL_ENV --enable-python" >> $postmkvirtualenv
-    #     >> make; make install
-    echo "make; make install" >> $postmkvirtualenv
-    #     >> export GEOS_DIR=$VIRTUAL_ENV
-    echo "export GEOS_DIR=\$VIRTUAL_ENV" >> $postmkvirtualenv
-    # Now install basemap directly from the matplotlib github page
-    #     >> pip install https://github.com/matplotlib/basemap/archive/master.zip
-    echo "pip install https://github.com/matplotlib/basemap/archive/master.zip" >> $postmkvirtualenv
-    echo "cd \$CURRENTDIR" >> $postmkvirtualenv
-  fi
 else # remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
   if [ -a $postmkvirtualenv ]; then
     > $postmkvirtualenv # empty the file
