@@ -21,7 +21,6 @@ branches=$(git branch | cut -c 3-) # see http://stackoverflow.com/a/3846451/1862
 #   -g perform 'git clean -dxf' to remove superfluous files 
 #   -v (path to the virtualenvwrapper.sh script)
 #   -o compile with further optimisation
-#   -m install basemap
 #   -h (print this info)
 
 usage="Usage $0 -b (-n -u -c -g -p -v -o -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
@@ -62,7 +61,7 @@ while getopts ":b:p:v:nougch" opt; do
       done
 
       if [[ $isbranch -eq 0 ]]; then # check if branch is found
-        echo "Specifed branch \"${thisbranch}\" is not in the git repo. Use one of the following:"
+        echo "Specified branch \"${thisbranch}\" is not in the git repo. Use one of the following:"
         for branch in ${branches[@]}; do
           echo "  $branch"
         done
@@ -73,7 +72,7 @@ while getopts ":b:p:v:nougch" opt; do
     p)
       pythonexe=$OPTARG
       if [[ ! -x "$OPTARG" ]]; then
-        echo "$OPTARG: this python exectuable does not exist or is not executable"
+        echo "$OPTARG: this python executable does not exist or is not executable"
         cd $CURDIR
         exit 0
       fi
@@ -175,7 +174,7 @@ lalsuite=("lal" "lalframe" "lalmetaio" "lalxml" "lalsimulation" "lalburst" "lali
 
 lalsuitepy=("glue" "pylal")
 
-# check if virtual enviroment already exists - if not create it otherwise activate it
+# check if virtual environment already exists - if not create it otherwise activate it
 if [[ ! -e $baseenv/$ENV/bin/activate ]]; then
   # create virtual environment
   workon # run workon
@@ -183,8 +182,17 @@ if [[ ! -e $baseenv/$ENV/bin/activate ]]; then
 
   # add postactive script to source lalsuite setup scripts
   postactivate=$VIRTUAL_ENV/bin/postactivate
-  echo "#!/bin/bash
-export LSCSOFT_LOCATION=$VIRTUAL_ENV" > $postactivate
+  echo "#!/bin/bash" > $postactivate
+  echo "export LSCSOFT_LOCATION=$VIRTUAL_ENV" >> $postactivate
+  
+  # store previous environment variables in string (canot use associative array as they cannot be exported!)
+  echo "PREVENVS=\"\"" >> $postactivate
+  echo "while IFS='=' read -r envname envvalue; do" >> $postactivate
+  echo "  PREVENVS=\${PREVENVS}\"\$envname=\$envvalue;\"" >>  $postactivate
+  echo "done < <(env)" >> $postactivate
+  echo "PREVENV=${PREVENVS::-1}" >> $postactivate # remove final 
+  echo "export PREVENVS" >> $postactivate
+
   for lalc in ${lalsuite[@]} ${lalsuitepy[@]}; do
     echo "if [ -r \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh ]; then
   . \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh
@@ -196,6 +204,29 @@ fi" >> $postactivate
   echo "cd $LALSUITE_LOCATION" >> $postactivate
   echo "git checkout $ENV" >> $postactivate
   echo "cd \$CURDIR" >> $postactivate
+
+  # for postdeactivation restore all previous environment variables
+  postdeactivate=$VIRTUAL_ENV/bin/postdeactivate
+  echo "#!/bin/bash" > $postdeactivate
+  echo "prevarr=(\${PREVENVS//;/ })" >> $postdeactivate # convert into an array
+  echo "while IFS='=' read -r envname envvalue; do" >> $postdeactivate
+  echo "  isnew=0" >> $postdeactivate
+  echo "  if [ \"\$envname\" != \"PREVENVS\" ]; then" >> $postdeactivate
+  echo "    for keypair in \${prevarr[@]}; do" >> $postdeactivate
+  echo "      keypairarr=(\${keypair//=/ })" >> $postdeactivate
+  echo "      key=\${keypairarr[0]}" >> $postdeactivate
+  echo "      if [ \"\$envname\" = \"\$key\" ]; then" >> $postdeactivate
+  echo "        export \${envname}=\"\${envvalue}\"" >> $postdeactivate # overwrite new environment variable with old one
+  echo "        isnew=1" >> $postdeactivate
+  echo "        break" >> $postdeactivate
+  echo "      fi" >> $postdeactivate
+  echo "    done" >> $postdeactivate
+  echo "    if [ \$isnew -eq 0 ]; then" >> $postdeactivate
+  echo "      unset \$envname" >> $postdeactivate
+  echo "    fi" >> $postdeactivate
+  echo "  fi" >> $postdeactivate
+  echo "done < <(env)" >> $postdeactivate
+  echo "unset PREVENVS" >> $postdeactivate
 
   deactivate
 fi
@@ -288,6 +319,8 @@ done
 # install python-based components of lalsuite
 for lalc in ${lalsuitepy[@]}; do
   cd $lalc
+  # remove stuff in build directory
+  rm -rf $lalc/build
   python setup.py install --prefix=${lalsuiteprefixes["$lalc"]}
 
   # source config scripts
@@ -299,7 +332,7 @@ done
 
 cd $CURDIR
 
-echo "You are in vitual environment \"$thisbranch\". Run \"deactivate\" to exit."
+echo "You are in virtual environment \"$thisbranch\". Run \"deactivate\" to exit."
 
 exit 0
 
