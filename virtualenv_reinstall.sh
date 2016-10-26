@@ -158,7 +158,12 @@ if [[ $nopython -eq 0 ]]; then
   postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
-    echo "pip install --no-cache-dir $pr" >> $postmkvirtualenv
+    # add work around for very old pip on atlas cluster that does not have --no-cache-dir option
+    if [[ $HOSTNAME == "atlas"* ]]; then
+      echo "pip install $pr" >> $postmkvirtualenv
+    else
+      echo "pip install --no-cache-dir $pr" >> $postmkvirtualenv
+    fi
   done
 else # remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
   if [ -a $postmkvirtualenv ]; then
