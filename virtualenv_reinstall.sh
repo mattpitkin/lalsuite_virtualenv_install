@@ -152,10 +152,11 @@ fi
 echo "#!/bin/bash" > $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
 echo 'PS1="(`basename \"$VIRTUAL_ENV\"`) $_OLD_VIRTUAL_PS1"' >> $VIRTUALENVWRAPPER_HOOK_DIR/postactivate
 
+postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
+
 if [[ $nopython -eq 0 ]]; then
   # some things to install (upgrade distribute if possible) in all virtual enviroments
   pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner")
-  postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
     # add work around for very old pip on atlas cluster that does not have --no-cache-dir option
