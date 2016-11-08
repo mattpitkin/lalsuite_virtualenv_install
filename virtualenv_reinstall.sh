@@ -196,7 +196,7 @@ if [[ ! -e $baseenv/$ENV/bin/activate ]]; then
   echo "while IFS='=' read -r envname envvalue; do" >> $postactivate
   echo "  PREVENVS=\${PREVENVS}\"\$envname=\$envvalue;\"" >>  $postactivate
   echo "done < <(env)" >> $postactivate
-  echo "PREVENV=${PREVENVS::-1}" >> $postactivate # remove final 
+  echo "PREVENVS=${PREVENVS::-1}" >> $postactivate # remove final 
   echo "export PREVENVS" >> $postactivate
 
   for lalc in ${lalsuite[@]} ${lalsuitepy[@]}; do
@@ -217,19 +217,15 @@ fi" >> $postactivate
   echo "prevarr=(\${PREVENVS//;/ })" >> $postdeactivate # convert into an array
   echo "while IFS='=' read -r envname envvalue; do" >> $postdeactivate
   echo "  isnew=0" >> $postdeactivate
+  echo "  # this if statement is specific to the ARCCA cluster" >> $postdeactivate
+  echo "  if [[ \"\${envname}\" = *\"BASH_FUNC_module\"* || \"\${envname}\" = \"}\" ]]; then" >> $postdeactivate
+  echo "    continue" >> $postdeactivate
+  echo "  fi" >> $postdeactivate
   echo "  if [ \"\$envname\" != \"PREVENVS\" ]; then" >> $postdeactivate
   echo "    for keypair in \${prevarr[@]}; do" >> $postdeactivate
   echo "      keypairarr=(\${keypair//=/ })" >> $postdeactivate
   echo "      key=\${keypairarr[0]}" >> $postdeactivate
-  echo "      keyval=\${keypairarr[1]}" >> $postdeactivate
-  echo "      # first two parts of this if...elif block are specific to the ARCCA cluster" >> $postdeactivate
-  echo "      if [[ "\$key" == *\"BASH_FUNC_module\"* ]]; then" >> $postdeactivate
-  echo "        isnew=1" >> $postdeactivate
-  echo "        break" >> $postdeactivate
-  echo "      elif [[ -z \"\${keyval// }\" ]]; then" >> $postdeactivate
-  echo "        isnew=1" >> $postdeactivate
-  echo "        break" >> $postdeactivate
-  echo "      elif [ \"\$envname\" = \"\$key\" ]; then" >> $postdeactivate
+  echo "      if [ \"\$envname\" = \"\$key\" ]; then" >> $postdeactivate
   echo "        export \${envname}=\"\${envvalue}\"" >> $postdeactivate # overwrite new environment variable with old one
   echo "        isnew=1" >> $postdeactivate
   echo "        break" >> $postdeactivate
