@@ -211,6 +211,16 @@ fi" >> $postactivate
   echo "git checkout $ENV" >> $postactivate
   echo "cd \$CURDIR" >> $postactivate
 
+  keyval=${keypairarr[1]}
+      # first two parts of this if...elif block are specific to the ARCCA cluster
+      if [[ "$key" == *"BASH_FUNC_module"* ]]; then
+        isnew=1
+        break
+      elif [[ -z "${keyval// }" ]]; then
+        isnew=1
+        break
+      elif
+
   # for postdeactivation restore all previous environment variables
   postdeactivate=$VIRTUAL_ENV/bin/postdeactivate
   echo "#!/bin/bash" > $postdeactivate
@@ -221,7 +231,15 @@ fi" >> $postactivate
   echo "    for keypair in \${prevarr[@]}; do" >> $postdeactivate
   echo "      keypairarr=(\${keypair//=/ })" >> $postdeactivate
   echo "      key=\${keypairarr[0]}" >> $postdeactivate
-  echo "      if [ \"\$envname\" = \"\$key\" ]; then" >> $postdeactivate
+  echo "      keyval=\${keypairarr[1]}" >> $postdeactivate
+  echo "      # first two parts of this if...elif block are specific to the ARCCA cluster" >> $postdeactivate
+  echo "      if [[ "\$key" == *\"BASH_FUNC_module\"* ]]; then" >> $postdeactivate
+  echo "        isnew=1" >> $postdeactivate
+  echo "        break" >> $postdeactivate
+  echo "      elif [[ -z \"\${keyval// }\" ]]; then" >> $postdeactivate
+  echo "        isnew=1" >> $postdeactivate
+  echo "        break" >> $postdeactivate
+  echo "      elif [ \"\$envname\" = \"\$key\" ]; then" >> $postdeactivate
   echo "        export \${envname}=\"\${envvalue}\"" >> $postdeactivate # overwrite new environment variable with old one
   echo "        isnew=1" >> $postdeactivate
   echo "        break" >> $postdeactivate
