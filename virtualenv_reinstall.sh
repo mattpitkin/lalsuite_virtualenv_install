@@ -196,7 +196,7 @@ if [[ ! -e $baseenv/$ENV/bin/activate ]]; then
   echo "while IFS='=' read -r envname envvalue; do" >> $postactivate
   echo "  PREVENVS=\${PREVENVS}\"\$envname=\$envvalue;\"" >>  $postactivate
   echo "done < <(env)" >> $postactivate
-  echo "PREVENVS=${PREVENVS::-1}" >> $postactivate # remove final 
+  echo "PREVENVS=\${PREVENVS::-1}" >> $postactivate # remove final 
   echo "export PREVENVS" >> $postactivate
 
   for lalc in ${lalsuite[@]} ${lalsuitepy[@]}; do
