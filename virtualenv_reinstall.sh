@@ -21,9 +21,11 @@ branches=$(git branch | cut -c 3-) # see http://stackoverflow.com/a/3846451/1862
 #   -g perform 'git clean -dxf' to remove superfluous files 
 #   -v (path to the virtualenvwrapper.sh script)
 #   -o compile with further optimisation
+#   -d compile without doxygen documentation
+#   -C perform a "make check"
 #   -h (print this info)
 
-usage="Usage $0 -b (-n -u -c -g -p -v -o -m -h):\n\t-b\tbranchname (the git branch name) [required]\n\
+usage="Usage $0 -b (-n -u -c -g -p -v -o -d -C -h):\n\t-b\tbranchname (the git branch name) [required]\n\
 \t-n\tdo not install a selection of additional python packages [optional]\n\
 \t-u\tuninstall previous lalsuite install (rather than just doing a 'make distclean') [optional]\n\
 \t-c\tonly re-run 'make install' without 'make distclean' beforehand [optional]\n\
@@ -31,6 +33,8 @@ usage="Usage $0 -b (-n -u -c -g -p -v -o -m -h):\n\t-b\tbranchname (the git bran
 \t-p\tpython (the path to the required python executable for installing\n\t\tthe virtual environment) [optional]\n\
 \t-v\tpath to the virtualenvwrapper.sh script [optional]\n\
 \t-o\tcompile lalsuite with the -O3 optimisation [optional]\n\
+\t-d\tcompile lalsuite without doxygen documentation (this is enabled by default)\n\
+\t-C\trun 'make check' after installation\n\
 \t-h\thelp\n"
 
 if [[ $# -eq 0 ]]; then
@@ -47,8 +51,10 @@ optimise=0
 unintsall=0
 gitclean=0
 distclean=1
+withdoc=1
+withcheck=0
 
-while getopts ":b:p:v:nougch" opt; do
+while getopts ":b:p:v:nougcdCh" opt; do
   case $opt in
     b)
       thisbranch=$OPTARG
@@ -105,6 +111,12 @@ while getopts ":b:p:v:nougch" opt; do
         gitclean=1
       fi
       ;;
+    d)
+      withdoc=0 # don't compile with doxygen documentation
+      ;;
+    C)
+      withcheck=1 # run 'make check' after installation
+      ;;
     h)
       echo -e $usage
       cd $CURDIR
@@ -156,7 +168,7 @@ postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
 
 if [[ $nopython -eq 0 ]]; then
   # some things to install (upgrade distribute if possible) in all virtual enviroments
-  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner")
+  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
     # add work around for very old pip on atlas cluster that does not have --no-cache-dir option
@@ -259,20 +271,25 @@ fi
 eswig="--enable-swig-python" # set enable swig python flag
 empi="--enable-mpi" # set enable MPI flag
 eopenmp="--enable-openmp" # set enable openmp flag
+edoxygen="" # set doxygen flag
 
+if [[ $withdoc -eq 1 ]]; then
+  edoxygen="--enable-doxygen" # set doxygen flag
+fi
+  
 # set the flags and prefix for each part of lalsuite
-declare -A lalsuiteflags=(["lal"]="$eswig" \
-                          ["lalframe"]="$eswig" \
-                          ["lalmetaio"]="$eswig" \
-                          ["lalxml"]="$eswig" \
-                          ["lalsimulation"]="$eswig" \
-                          ["lalburst"]="$eswig" \
-                          ["lalinspiral"]="$eswig" \
-                          ["lalpulsar"]="$eswig --enable-lalxml" \
-                          ["lalstochastic"]="$eswig" \
-                          ["laldetchar"]="$eswig" \
-                          ["lalinference"]="$eswig $eopenmp" \
-                          ["lalapps"]="--enable-lalxml $empi $eopenmp" \
+declare -A lalsuiteflags=(["lal"]="$eswig $edoxygen" \
+                          ["lalframe"]="$eswig $edoxygen" \
+                          ["lalmetaio"]="$eswig $edoxygen" \
+                          ["lalxml"]="$eswig $edoxygen" \
+                          ["lalsimulation"]="$eswig $edoxygen" \
+                          ["lalburst"]="$eswig $edoxygen" \
+                          ["lalinspiral"]="$eswig $edoxygen" \
+                          ["lalpulsar"]="$eswig --enable-lalxml $edoxygen" \
+                          ["lalstochastic"]="$eswig $edoxygen" \
+                          ["laldetchar"]="$eswig $edoxygen" \
+                          ["lalinference"]="$eswig $eopenmp $edoxygen" \
+                          ["lalapps"]="--enable-lalxml $empi $eopenmp $edoxygen" \
                           ["glue"]="" \
                           ["pylal"]="")
 
@@ -317,7 +334,17 @@ for lalc in ${lalsuite[@]}; do
     ./configure --prefix=${lalsuiteprefixes["$lalc"]} ${lalsuiteflags["$lalc"]} CFLAGS=$extracflags
   fi
 
+  # make and install
   make install -j4
+
+  # make and install documentation
+  if [[ $withdoc -eq 1 ]]; then
+    make install-html -j4
+  fi
+
+  if [[ $withcheck -eq 1 ]]; then
+    make check
+  fi
 
   # source config scripts
   if [ -f ${lalsuiteprefixes["$lalc"]}/etc/${lalc}-user-env.sh ]; then
