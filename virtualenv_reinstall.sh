@@ -255,7 +255,7 @@ postmkvirtualenv=$VIRTUALENVWRAPPER_HOOK_DIR/postmkvirtualenv
 
 if [[ $nopython -eq 0 ]]; then
   # some things to install (upgrade distribute if possible) in all virtual enviroments
-  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
+  pipinstalls=("--upgrade distribute" "numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
   echo "#!/bin/bash" > $postmkvirtualenv
   for pr in "${pipinstalls[@]}"; do
     # add work around for very old pip on atlas cluster that does not have --no-cache-dir option
@@ -265,10 +265,6 @@ if [[ $nopython -eq 0 ]]; then
       echo "pip install --no-cache-dir $pr" >> $postmkvirtualenv
     fi
   done
-else # remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
-  if [ -a $postmkvirtualenv ]; then
-    > $postmkvirtualenv # empty the file
-  fi
 fi
 
 # set path to virtual environment
@@ -297,12 +293,28 @@ if [[ ! -e $baseenv/$ENV/bin/activate ]]; then
   echo "PREVENVS=\${PREVENVS:0:\${#PREVENVS}-1}" >> $postactivate # remove final ; (NOTE: ${PREVENVS::-1} doesn't seem to work on bash on the RAVEN cluster!)
   echo "export PREVENVS" >> $postactivate
 
-  for lalc in ${lalsuite[@]} ${lalsuitepy[@]}; do
+  # tell post activate to source lalsuiterc
+  echo "if [ -r \$LSCSOFT_LOCATION/etc/lalsuiterc ]; then
+  . \$LSCSOFT_LOCATION/etc/lalsuiterc
+fi" >> $postactivate
+
+  # try source python package scripts 
+  for lalc in ${lalsuitepy[@]}; do
     echo "if [ -r \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh ]; then
   . \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh
 fi" >> $postactivate
-  done
 
+    # pylal has been deprecated, so in the master branch a pylal-user-env.sh file no longer exists.
+    # So, if you can to use it it has to be added manually to the python path
+    if ${lalc}="pylal"; do
+      # get python major.minor version info
+      PYV=`python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)";`
+      echo "if [ ! -f \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh ]; then
+export PYTHONPATH=\$PYTHONPATH:\$LSCSOFT_LOCATION/lib/python${PYV}/site-packages/pylal
+fi" >> $postactivate
+    fi
+  done
+  
   # for postactivation make sure correct git repo is currently checked out
   echo "CURDIR=\$PWD" >> $postactivate
   echo "cd $LALSUITE_LOCATION" >> $postactivate
@@ -337,6 +349,11 @@ fi" >> $postactivate
   echo "unset PREVENVS" >> $postdeactivate
 
   deactivate
+fi
+
+# remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
+if [ -a $postmkvirtualenv ]; then
+  > $postmkvirtualenv # empty the file
 fi
 
 # enter virtual environment
