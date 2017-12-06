@@ -306,11 +306,18 @@ fi" >> $postactivate
 
     # pylal has been deprecated, so in the master branch a pylal-user-env.sh file no longer exists.
     # So, if you can to use it it has to be added manually to the python path
-    if ${lalc}="pylal"; do
+    if [[ ${lalc} == "pylal" ]]; do
       # get python major.minor version info
       PYV=`python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)";`
+      lenpath=$((${#PYTHONPATH}-1))
+      # check whether a ":" seperator is needed
+      if [[ "${PYTHONPATH:$lenpath:1}" == ":" ]]; then
+        sep=""
+      else
+        sep=":"
+      fi
       echo "if [ ! -f \$LSCSOFT_LOCATION/etc/${lalc}-user-env.sh ]; then
-export PYTHONPATH=\$PYTHONPATH:\$LSCSOFT_LOCATION/lib/python${PYV}/site-packages/pylal
+export PYTHONPATH=\$PYTHONPATH${sep}\$LSCSOFT_LOCATION/lib/python${PYV}/site-packages/pylal:
 fi" >> $postactivate
     fi
   done
