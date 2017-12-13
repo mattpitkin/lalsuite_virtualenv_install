@@ -230,8 +230,8 @@ export WORKON_HOME=$baseenv
 
 # check if workon function is defined (if not then source the virtualenvwrapper script
 if [ ! -n "$(type -t workon)" ] || [ ! "$(type -t workon)" = function ]; then
-  # see if virtialenvwrapper.sh script has been given
-  if [ -r $vewscript ]; then
+  # see if virtualenvwrapper.sh script has been given
+  if [ ! -z $vewscript ] && [ -r $vewscript ]; then
     source $vewscript
   else
     # try and find script
@@ -306,7 +306,7 @@ fi" >> $postactivate
 
     # pylal has been deprecated, so in the master branch a pylal-user-env.sh file no longer exists.
     # So, if you can to use it it has to be added manually to the python path
-    if [[ ${lalc} == "pylal" ]]; do
+    if [[ ${lalc} == "pylal" ]]; then
       # get python major.minor version info
       PYV=`python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.version_info[:2]));sys.stdout.write(t)";`
       lenpath=$((${#PYTHONPATH}-1))
@@ -355,7 +355,7 @@ fi" >> $postactivate
   echo "done < <(env)" >> $postdeactivate
   echo "unset PREVENVS" >> $postdeactivate
 
-  deactivate
+  #deactivate
 fi
 
 # remove any previous postmkvirtualenv (so that things do not get reinstalled on new envs if not wanted)
@@ -366,7 +366,13 @@ fi
 # enter virtual environment
 workon $ENV
 
+#echo $ENV
+#echo $LALSUITE_LOCATION
+
 cd $LALSUITE_LOCATION
+
+#echo $PWD
+#echo $thisbranch
 
 # make sure branch is checked out
 git checkout $thisbranch
