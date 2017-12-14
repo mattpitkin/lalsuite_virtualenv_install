@@ -42,7 +42,7 @@ pythonexe=""
 projdir=""
 isbranch=0
 optimise=0
-unintsall=0
+uninstall=0
 gitclean=0
 distclean=1
 withdoc=1
@@ -60,8 +60,6 @@ fi
 
 # Note the quotes around `$TEMP': they are essential!
 eval set -- "$TEMP"
-
-echo $TEMP
 
 #while getopts ":b:x:p:v:nougcdCh" opt; do
 while true; do
@@ -267,8 +265,7 @@ if [ ! -f $pipfile ]; then
 
   # install dependencies
   if [[ $nopython -eq 0 ]]; then
-    #pipinstalls=("numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
-    pipinstalls=("numpy")
+    pipinstalls=("numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
 
     for pr in "${pipinstalls[@]}"; do
       pipenv install $pr
@@ -276,79 +273,73 @@ if [ ! -f $pipfile ]; then
   fi
 fi
 
-# enter virtual environment
-pipenv run # need to put the rest of the stuff after the run command somehow
+# get virtual environment location
+VIRTUAL_ENV=`pipenv --venv`
 
-cd $LALSUITE_LOCATION
+# set flags
+edoxygen='';
 
-# make sure branch is checked out
-git checkout $thisbranch
+if [[ $withdoc -eq 1 ]]; then
+  edoxygen=' --enable-doxygen';
+fi;
+
+extracflags='';
+if [[ $optimise -eq 1 ]]; then
+  extracflags=-O3;
+fi;
+
+enableflags='--enable-mpi --enable-cfitsio --enable-swig-python --enable-openmp'
+enableflags=${enableflag}${edoxygen}
+
+runlalsuite="
+cd $LALSUITE_LOCATION;
+
+git checkout $thisbranch;
 
 if [[ $? -ne 0 ]]; then
-  echo "Could not check out \"$thisbranch\". Check for problems."
-  deactivate
-  cd $CURDIR
-  exit 0
-fi
+  echo 'Could not check out \"$thisbranch\". Check for problems.';
+  exit 0;
+fi;
 
-eswig="--enable-swig-python" # set enable swig python flag
-empi="--enable-mpi" # set enable MPI flag
-eopenmp="--enable-openmp" # set enable openmp flag
-edoxygen="" # set doxygen flag
-
-if [[ $withdoc -eq 1 ]]; then
-  edoxygen="--enable-doxygen" # set doxygen flag
-fi
-  
-LSCSOFT_PREFIX=$VIRTUAL_ENV
-
-extracflags=""
-if [[ $optimise -eq 1 ]]; then
-  extracflags=-O3
-fi
-
-enableflags="--enable-mpi --enable-cfitsio"
-
-# perform git clean to remove old/superfluous files and directories from the repository
 if [[ $gitclean -eq 1 ]]; then
-  git clean -dxf
-fi
+  git clean -dxf;
+fi;
 
-# install components of lalsuite
 if [[ $uninstall -eq 1 ]]; then
-  make uninstall
-fi
+  make uninstall;
+fi;
 
 if [[ $distclean -eq 1 ]]; then
-  make distclean
-  ./00boot
-  ./configure --prefix=$LSCSOFT_PREFIX $enableflags CFLAGS=$extracflags
-fi
+  make distclean;
+  ./00boot;
+  ./configure --prefix=$VIRTUAL_ENV $enableflags CFLAGS=$extracflags;
+fi;
 
-# make and install
-make install -j4
+make install -j4;
 
-# make and install documentation
 if [[ $withdoc -eq 1 ]]; then
-  make install-html -j4
-fi
+  make install-html -j4;
+fi;
 
 if [[ $withcheck -eq 1 ]]; then
-  make check
-fi
+  make check;
+fi;
 
-# move back into project directory
-cd $projdir
+cd $projdir;
 
-source ${LSCSOFT_PREFIX}/etc/lalsuiterc
+source ${VIRTUAL_ENV}/etc/lalsuiterc
+"
+
+# run installation of LALSuite in the virtual environment
+pipenv run /bin/bash `eval $runlalsuite`
 
 # create environment file (.env) to source lalsuiterc
 if [ ! -f ".env" ]; then
-  echo "source ${LSCSOFT_PREFIX}/etc/lalsuiterc" > .env
+  # THIS NEEDS FIXED - .env can't just source another file, I think it need to directly set the environment variables
+  echo "PYTHONPATH= " > .env # remove PYTHONPATH
+  echo "source ${VIRTUAL_ENV}/etc/lalsuiterc" >> .env
 fi
 
-cd $CURDIR
-
-echo "You are in virtual environment \"$thisbranch\". Type \"exit\" to exit."
+echo "To enter this project cd into \"$projdir\" and run \"pipenv shell\"."
 
 exit 0
