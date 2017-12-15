@@ -13,17 +13,15 @@ LALSUITE_LOCATION=${HOME}/lscsoft/lalsuite
 #   -n (do not install additional python packages)
 #   -p python (the path to the required python version)
 #   -u uninstall previous install (rather than just doing a distclean)
-#   -c only re-run 'make install' with running 'make distclean' beforehand
 #   -g perform 'git clean -dxf' to remove superfluous files
 #   -o compile with further optimisation
 #   -C perform a "make check"
 #   -h (print this info)
 
-usage="Usage $0 -b -x (-n -u -c -g -p -v -o -d -C --disable-lal[packagename] --disable-doxygen -h):\n\t-b\t\t\t\tbranchname (the git branch name) [required]\n\
+usage="Usage $0 -b -x (-n -u -g -p -v -o -d -C --disable-lal[packagename] --disable-doxygen -h):\n\t-b\t\t\t\tbranchname (the git branch name) [required]\n\
 \t-x\t\t\t\tproject directory (the ) base directory into which the virtual env project will be added) [required]\n\
 \t-n\t\t\t\tdo not install a selection of additional python packages [optional]\n\
 \t-u\t\t\t\tuninstall previous lalsuite install (rather than just doing a 'make distclean') [optional]\n\
-\t-c\t\t\t\tonly re-run 'make install' without 'make distclean' beforehand [optional]\n\
 \t-g\t\t\t\tperform 'git clean -dxf' to remove superfluous files (BE CAREFUL!) [optional]\n\
 \t-p\t\t\t\tpython (the path to the required python executable for installing\n\t\t\t\t\tthe virtual environment) [optional]\n\
 \t-o\t\t\t\tcompile lalsuite with the -O3 optimisation [optional]\n\
@@ -44,14 +42,13 @@ isbranch=0
 optimise=0
 uninstall=0
 gitclean=0
-distclean=1
 withdoc=1
 withcheck=0
 disablepkgs=""
 thisbranch=""
 
 # use getopt to parse command line rather than inbuilt bash getopts (https://stackoverflow.com/a/7948533/1862861)
-TEMP=`getopt -o b:x:nucgp:v:odCh --longoptions disable-doxygen,disable-lalframe,disable-lalxml,disable-lalmetaio,disable-lalsimulation,disable-lalburst,disable-laldetchar,disable-lalinspiral,disable-lalstochastic,disable-lalpulsar,disable-lalinference -- "$@"`
+TEMP=`getopt -o b:x:nugp:v:odCh --longoptions disable-doxygen,disable-lalframe,disable-lalxml,disable-lalmetaio,disable-lalsimulation,disable-lalburst,disable-laldetchar,disable-lalinspiral,disable-lalstochastic,disable-lalpulsar,disable-lalinference -- "$@"`
 
 if [ $? != 0 ]; then
   echo -e $usage
@@ -86,10 +83,6 @@ while true; do
       ;;
     -u )
       uninstall=1
-      shift
-      ;;
-    -c )
-      distclean=0 # remove distclean
       shift
       ;;
     -g )
@@ -226,16 +219,6 @@ if [[ $gitclean -eq 1 ]]; then
   fi
 fi
 
-pi=""
-if [[ $nopython -eq 0 ]]; then
-  # some things to install (upgrade distribute if possible) in all virtual enviroments
-  pipinstalls=("numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
-
-  for pr in "${pipinstalls[@]}"; do
-    pi=${pi}" -i ${pr}"
-  done
-fi
-
 # set path to virtual environment
 ENV=$thisbranch
 
@@ -265,7 +248,7 @@ if [ ! -f $pipfile ]; then
 
   # install dependencies
   if [[ $nopython -eq 0 ]]; then
-    pipinstalls=("numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn")
+    pipinstalls=("numpy" "scipy" "matplotlib" "shapely" "corner" "astropy" "python-crontab" "h5py" "healpy" "pandas" "scotchcorner" "sklearn" "statsmodels")
 
     for pr in "${pipinstalls[@]}"; do
       pipenv install $pr
@@ -277,19 +260,19 @@ fi
 VIRTUAL_ENV=`pipenv --venv`
 
 # set flags
-edoxygen='';
+edoxygen=''
 
 if [[ $withdoc -eq 1 ]]; then
-  edoxygen=' --enable-doxygen';
-fi;
+  edoxygen=' --enable-doxygen'
+fi
 
 extracflags='';
 if [[ $optimise -eq 1 ]]; then
-  extracflags=-O3;
-fi;
+  extracflags=-O3
+fi
 
 enableflags='--enable-mpi --enable-cfitsio --enable-swig-python --enable-openmp'
-enableflags=${enableflag}${edoxygen}
+enableflags=${enableflags}${edoxygen}
 
 runlalsuite="
 cd $LALSUITE_LOCATION;
@@ -309,12 +292,8 @@ if [[ $uninstall -eq 1 ]]; then
   make uninstall;
 fi;
 
-if [[ $distclean -eq 1 ]]; then
-  make distclean;
-  ./00boot;
-  ./configure --prefix=$VIRTUAL_ENV $enableflags CFLAGS=$extracflags;
-fi;
-
+./00boot;
+./configure --prefix=$VIRTUAL_ENV $enableflags CFLAGS=$extracflags;
 make install -j4;
 
 if [[ $withdoc -eq 1 ]]; then
@@ -324,20 +303,30 @@ fi;
 if [[ $withcheck -eq 1 ]]; then
   make check;
 fi;
-
-cd $projdir;
-
-source ${VIRTUAL_ENV}/etc/lalsuiterc
 "
 
 # run installation of LALSuite in the virtual environment
 pipenv run /bin/bash `eval $runlalsuite`
 
-# create environment file (.env) to source lalsuiterc
+# create environment file (.env) by sourcing values from lalsuiterc
 if [ ! -f ".env" ]; then
-  # THIS NEEDS FIXED - .env can't just source another file, I think it need to directly set the environment variables
   echo "PYTHONPATH= " > .env # remove PYTHONPATH
-  echo "source ${VIRTUAL_ENV}/etc/lalsuiterc" >> .env
+  ENVSOURCES=("LAL" "LALAPPS" "LALBURST" "LALFRAME" "LALXML" "LALMETAIO" "LALINSPIRAL" "LALSIMULATION" "LALPULSAR" "LALFRAME" "LALSTOCHASTIC" "LALDETCHAR")
+
+  for es in "${ENVSOURCES[@]}"; do
+    LDATADIR=${es}_DATADIR
+    ENVDATADIR=`source ${VIRTUAL_ENV}/etc/lalsuiterc; echo ${!LDATADIR}` # see https://stackoverflow.com/a/30073926/1862861 for use of !
+    echo "${LDATADIR}=$ENVDATADIR" >> .env
+    LPREFIX=${es}_PREFIX
+    ENVPREFIX=`source ${VIRTUAL_ENV}/etc/lalsuiterc; echo ${!LPREFIX}`
+    echo "${LPREFIX}=$ENVPREFIX" >> .env
+  done
+  
+  PATHS=("PYTHONPATH" "LD_LIBRARY_PATH" "PKG_CONFIG_PATH" "PATH" "MANPATH")
+  for pt in "${PATHS[@]}"; do
+    PATHVAL=`source ${VIRTUAL_ENV}/etc/lalsuiterc; echo ${!pt}`
+    echo "${pt}=$PATHVAL" >> .env
+  done
 fi
 
 echo "To enter this project cd into \"$projdir\" and run \"pipenv shell\"."
