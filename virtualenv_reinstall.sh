@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Script to create a virtual environment for, and (re)install, a particular lalsuite branch
-# This has been overhauled to use pew https://github.com/berdario/pew rather than virtualenvwrapper
-# (following from this discussion https://gist.github.com/datagrok/2199506), so pew must be
-# installed, i.e., using "sudo pip install pew" or "pip install --user pew"
+# This has been overhauled to use pipenv https://github.com/pypa/pipenv rather than virtualenvwrapper,
+# so pipenv must be installed, i.e., using "sudo pip install pipenv" or "pip install --user pipenv"
 
 LALSUITE_LOCATION=${HOME}/lscsoft/lalsuite
 
