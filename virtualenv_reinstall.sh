@@ -304,8 +304,8 @@ if [[ $withcheck -eq 1 ]]; then
 fi;
 "
 
-# run installation of LALSuite in the virtual environment
-pipenv run /bin/bash `eval $runlalsuite`
+# run installation of LALSuite in the virtual environment (re-direct stdout to stderr [1>&2], so progress can be seen)
+pipenv run /bin/bash `eval $runlalsuite 1>&2`
 
 # create environment file (.env) by sourcing values from lalsuiterc
 if [ ! -f ".env" ]; then
