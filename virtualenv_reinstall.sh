@@ -279,33 +279,33 @@ cd $LALSUITE_LOCATION;
 git checkout $thisbranch;
 
 if [[ $? -ne 0 ]]; then
-  echo 'Could not check out \"$thisbranch\". Check for problems.';
+  echo 'Could not check out \"$thisbranch\". Check for problems.' 1>&2;
   exit 0;
 fi;
 
 if [[ $gitclean -eq 1 ]]; then
-  git clean -dxf;
+  git clean -dxf 1>&2;
 fi;
 
 if [[ $uninstall -eq 1 ]]; then
-  make uninstall;
+  make uninstall 1>&2;
 fi;
 
-./00boot;
-./configure --prefix=$VIRTUAL_ENV $enableflags CFLAGS=$extracflags;
-make install -j4;
+./00boot 1>&2;
+./configure --prefix=$VIRTUAL_ENV $enableflags CFLAGS=$extracflags 1>&2;
+make install -j4 1>&2;
 
 if [[ $withdoc -eq 1 ]]; then
-  make install-html -j4;
+  make install-html -j4 1>&2;
 fi;
 
 if [[ $withcheck -eq 1 ]]; then
-  make check;
+  make check 1>&2;
 fi;
 "
 
 # run installation of LALSuite in the virtual environment (re-direct stdout to stderr [1>&2], so progress can be seen)
-pipenv run /bin/bash `eval $runlalsuite 1>&2`
+pipenv run /bin/bash `eval $runlalsuite`
 
 # create environment file (.env) by sourcing values from lalsuiterc
 if [ ! -f ".env" ]; then
