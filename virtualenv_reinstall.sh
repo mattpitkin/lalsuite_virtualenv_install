@@ -47,7 +47,7 @@ disablepkgs=""
 thisbranch=""
 
 # use getopt to parse command line rather than inbuilt bash getopts (https://stackoverflow.com/a/7948533/1862861)
-TEMP=`getopt -o b:x:nugp:v:odCh --longoptions disable-doxygen,disable-lalframe,disable-lalxml,disable-lalmetaio,disable-lalsimulation,disable-lalburst,disable-laldetchar,disable-lalinspiral,disable-lalstochastic,disable-lalpulsar,disable-lalinference -- "$@"`
+TEMP=`getopt -o b:x:nugp:v:odCh --longoptions disable-doxygen,disable-lalframe,disable-lalxml,disable-lalmetaio,disable-lalsimulation,disable-lalburst,disable-laldetchar,disable-lalinspiral,disable-lalpulsar,disable-lalinference -- "$@"`
 
 if [ $? != 0 ]; then
   echo -e $usage
@@ -118,10 +118,6 @@ while true; do
       ;;
     --disable-lalinspiral )
       disablepkgs="$disablepkgs --disable-lalinspiral"
-      shift
-      ;;
-    --disable-lalstochastic )
-      disablepkgs="$disablepkgs --disable-lalstochastic"
       shift
       ;;
     --disable-lalpulsar )
