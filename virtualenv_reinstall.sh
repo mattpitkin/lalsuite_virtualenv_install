@@ -208,6 +208,9 @@ if [[ ! -z "$pythonexe" ]]; then
     exit 0
   fi
   pythonexe="--python $pythonexe"
+  pythonversion=`$pythonexe -c "import sys; print('{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
+else
+  pythonversion=`python -c "import sys; print('{}.{}'.format(sys.version_info[0], sys.version_info[1]))"`
 fi
 
 # check if you really want to do a git clean
@@ -278,6 +281,8 @@ enableflags=${enableflags}${edoxygen}
 
 runlalsuite="
 cd $LALSUITE_LOCATION;
+
+export PYTHONPATH=${VIRTUAL_ENV}/lib/python${pythonversion}/site-packages:${PYTHONPATH};
 
 git checkout $thisbranch;
 
