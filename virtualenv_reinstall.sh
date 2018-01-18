@@ -12,15 +12,17 @@ LALSUITE_LOCATION=${HOME}/lscsoft/lalsuite
 #   -n (do not install additional python packages)
 #   -p python (the path to the required python version)
 #   -u uninstall previous install (rather than just doing a distclean)
+#   -e recreate the .env file
 #   -g perform 'git clean -dxf' to remove superfluous files
 #   -o compile with further optimisation
 #   -C perform a "make check"
 #   -h (print this info)
 
-usage="Usage $0 -b -x (-n -u -g -p -v -o -d -C --disable-lal[packagename] --disable-doxygen -h):\n\t-b\t\t\t\tbranchname (the git branch name) [required]\n\
-\t-x\t\t\t\tproject directory (the ) base directory into which the virtual env project will be added) [required]\n\
+usage="Usage $0 -b -x (-n -u -e -g -p -v -o -d -C --disable-lal[packagename] --disable-doxygen -h):\n\t-b\t\t\t\tbranchname (the git branch name) [required]\n\
+\t-x\t\t\t\tproject directory (the base directory into which the virtual env project will be added) [required]\n\
 \t-n\t\t\t\tdo not install a selection of additional python packages [optional]\n\
 \t-u\t\t\t\tuninstall previous lalsuite install (rather than just doing a 'make distclean') [optional]\n\
+\t-e\t\t\t\tre-create the '.env' file in the project directory
 \t-g\t\t\t\tperform 'git clean -dxf' to remove superfluous files (BE CAREFUL!) [optional]\n\
 \t-p\t\t\t\tpython (the path to the required python executable for installing\n\t\t\t\t\tthe virtual environment) [optional]\n\
 \t-o\t\t\t\tcompile lalsuite with the -O3 optimisation [optional]\n\
@@ -41,6 +43,7 @@ isbranch=0
 optimise=0
 uninstall=0
 gitclean=0
+createenv=0
 withdoc=1
 withcheck=0
 disablepkgs=""
@@ -78,6 +81,10 @@ while true; do
       ;;
     -n )
       nopython=1
+      shift
+      ;;
+    -e )
+      createenv=1
       shift
       ;;
     -u )
@@ -304,7 +311,7 @@ fi;
 pipenv run /bin/bash `eval $runlalsuite`
 
 # create environment file (.env) by sourcing values from lalsuiterc
-if [ ! -f ".env" ]; then
+if [[ ( ! -f ".env" ) || ( $createenv -eq 1 ) ]]; then
   echo "PYTHONPATH= " > .env # remove PYTHONPATH
   ENVSOURCES=("LAL" "LALAPPS" "LALBURST" "LALFRAME" "LALXML" "LALMETAIO" "LALINSPIRAL" "LALSIMULATION" "LALPULSAR" "LALFRAME" "LALSTOCHASTIC" "LALDETCHAR")
 
