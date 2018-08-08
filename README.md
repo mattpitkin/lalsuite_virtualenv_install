@@ -75,7 +75,7 @@ $ conda create -n $NEW_BRANCH python=3
 You should also install some things that are required for LALSuite in the environment.
 
 ```bash
-$ conda install -n $NEW_BRANCH pip numpy scipy matplotlib h5py swig corner astropy
+$ conda install -n $NEW_BRANCH pip numpy scipy matplotlib h5py swig astropy
 ```
 
 **Installing LALSuite**
