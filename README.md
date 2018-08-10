@@ -72,10 +72,10 @@ $ cd ${LALSUITE_BASE}_${NEW_BRANCH}
 $ conda create -n $NEW_BRANCH python=3
 ```
 
-You should also install some things that are required for LALSuite in the environment.
+You should also install some things that are required/useful for LALSuite in the environment.
 
 ```bash
-$ conda install -n $NEW_BRANCH pip numpy scipy matplotlib h5py swig astropy
+$ conda install -n $NEW_BRANCH pip ipython numpy scipy matplotlib h5py swig astropy
 ```
 
 **Installing LALSuite**
