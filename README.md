@@ -88,6 +88,13 @@ $(my_new_branch) cd ${LALSUITE_BASE}_${NEW_BRANCH}
 $(my_new_branch) ./00boot && ./configure --prefix=${CONDA_PREFIX} --enable-swig-python && make install -j3
 ```
 
+Install `glue` and some oether requirements.
+
+```bash
+pip install lscsoft-glue
+pip install shapely
+```
+
 **Removing worktrees and environments**
 
 If you want to remove a worktree you can delete the worktree path and then prune it, e.g.
