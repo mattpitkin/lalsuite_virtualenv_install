@@ -85,7 +85,7 @@ Now you can actiavte and install LALSuite in the new environment.
 ```bash
 $ source activate $NEW_BRANCH
 $(my_new_branch) cd ${LALSUITE_BASE}_${NEW_BRANCH}
-$(my_new_branch) ./00boot && ./configure --prefix=${CONDA_PREFIX} --enable-swig-python && make install -j3
+$(my_new_branch) ./00boot && ./configure --prefix=${CONDA_PREFIX} --enable-swig-python && make && make install -j3
 ```
 
 Install `glue` and some oether requirements.
