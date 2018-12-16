@@ -59,7 +59,8 @@ $ export LALSUITE_BASE=/home/name/repositories/lalsuite
 $ cd /home/name/repositories/lalsuite
 $ export NEW_BRANCH=my_new_branch
 $ git checkout -b $NEW_BRANCH
-$ git worktree add ${LALSUITE_BASE}_${NEW_BRANCH}
+$ git checkout master
+$ git worktree add ${LALSUITE_BASE}_${NEW_BRANCH} $NEW_BRANCH
 ```
 
 **Create an environment for the new branch**
